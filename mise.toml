@@ -1,0 +1,66 @@
+[tools]
+# Match the repository's declared runtime baseline and package manager.
+node = "22.19.0"
+pnpm = "11.6.0"
+
+# Git hook tooling.
+hk = "1.48.0"
+pkl = "0.31.1"
+
+# Fast repository hygiene checks used by hk.
+typos = "1.47.2"
+gitleaks = "8.30.1"
+
+[tasks.install]
+description = "Install workspace dependencies"
+run = "pnpm install"
+
+[tasks.setup]
+description = "Install tools, dependencies, and git hooks"
+depends = ["install"]
+run = "mise run hk:install"
+
+[tasks.check]
+alias = "c"
+description = "Run all workspace package checks"
+run = "pnpm check"
+
+[tasks.typecheck]
+description = "Run all workspace typechecks"
+run = "pnpm typecheck"
+
+[tasks.test]
+alias = "t"
+description = "Run all workspace tests"
+run = "pnpm test"
+
+[tasks.lint]
+description = "Run package lint checks"
+run = "pnpm --filter @weshipwork/pi-subagents lint"
+
+[tasks."lint:fix"]
+description = "Run package lint checks with safe fixes"
+run = "pnpm --filter @weshipwork/pi-subagents lint:fix"
+
+[tasks."test:mirror"]
+description = "Run the pi-subagents Mirror mode test"
+run = "pnpm --filter @weshipwork/pi-subagents test:mirror"
+
+[tasks."hk:install"]
+description = "Install tracked hk hook wrappers for this checkout"
+run = "git config --local core.hooksPath .hk-hooks"
+
+[tasks."hk:check"]
+description = "Run hk checks across the repository"
+run = "hk check --all"
+
+[tasks."hk:validate"]
+description = "Validate hk configuration"
+run = "hk validate"
+
+[tasks.ci]
+description = "Run the same check command as CI after a frozen install"
+run = [
+  "pnpm install --frozen-lockfile",
+  "pnpm check",
+]

@@ -1,0 +1,3 @@
+[default.extend-words]
+# Used in pi-subagents changelog text to mean incorrectly parsed.
+mis = "mis"

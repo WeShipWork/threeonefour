@@ -1,0 +1,65 @@
+{
+  "name": "@weshipwork/pi-subagents",
+  "version": "0.10.3-mirror.0",
+  "description": "Fork of tintinweb pi-subagents with read-only mirror observation support for pi-herd.",
+  "author": "Three One Four / tintinweb",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WeShipWork/threeonefour.git",
+    "directory": "packages/pi-subagents"
+  },
+  "homepage": "https://github.com/WeShipWork/threeonefour/tree/main/packages/pi-subagents",
+  "bugs": {
+    "url": "https://github.com/WeShipWork/threeonefour/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-extension",
+    "subagent",
+    "agent",
+    "autonomous"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-ai": ">=0.74.0",
+    "@earendil-works/pi-coding-agent": ">=0.74.0",
+    "@earendil-works/pi-tui": ">=0.74.0"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.49",
+    "croner": "^10.0.1",
+    "nanoid": "^5.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run e2e --reporter=verbose",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/ test/",
+    "lint:fix": "biome check --fix src/ test/",
+    "check": "pnpm run typecheck && pnpm test",
+    "test:mirror": "vitest run test/mirror.test.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.0.18",
+    "@earendil-works/pi-ai": "^0.79.3",
+    "@earendil-works/pi-coding-agent": "^0.79.3",
+    "@earendil-works/pi-tui": "^0.79.3"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "video": "https://github.com/tintinweb/pi-subagents/raw/master/media/demo.mp4",
+    "image": "https://github.com/tintinweb/pi-subagents/raw/master/media/screenshot.png"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

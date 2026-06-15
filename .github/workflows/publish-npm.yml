@@ -1,0 +1,95 @@
+name: Publish npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package directory under packages/, or 'all'"
+        required: true
+        default: all
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish public Pi extensions to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - name: Install npm with trusted publishing support
+        run: npm install -g npm@^11.5.1
+      - name: Show tool versions
+        run: |
+          node --version
+          npm --version
+          pnpm --version
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check
+        run: pnpm check
+      - name: Publish selected packages
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          set -euo pipefail
+
+          publish_one() {
+            local dir="$1"
+            if [[ ! -f "$dir/package.json" ]]; then
+              echo "Missing package.json: $dir" >&2
+              exit 1
+            fi
+            local name version private
+            name="$(node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); console.log(p.name)' "$dir/package.json")"
+            version="$(node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); console.log(p.version)' "$dir/package.json")"
+            private="$(node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); console.log(p.private ? "true" : "false")' "$dir/package.json")"
+            if [[ "$private" == "true" ]]; then
+              echo "Skipping private package ${name}"
+              return 0
+            fi
+            if npm view "${name}@${version}" version --registry=https://registry.npmjs.org --@weshipwork:registry=https://registry.npmjs.org >/dev/null 2>&1; then
+              echo "Skipping ${name}@${version}; already published"
+              return 0
+            fi
+
+            local tmp tarball
+            tmp="$(mktemp -d)"
+            trap 'rm -rf "$tmp"' RETURN
+            tarball="$(cd "$dir" && pnpm pack --pack-destination "$tmp" | tail -n 1)"
+            if tar -xOf "$tarball" package/package.json | grep -q 'workspace:'; then
+              echo "Refusing to publish ${name}@${version}; packed package.json contains workspace: dependencies" >&2
+              exit 1
+            fi
+
+            echo "Publishing ${name}@${version} from ${dir}"
+            npm publish "$tarball" --registry=https://registry.npmjs.org --@weshipwork:registry=https://registry.npmjs.org --access public
+          }
+
+          if [[ "$PACKAGE" == "all" ]]; then
+            for dir in packages/pi-subagents packages/pi-herdr packages/pi-herd; do
+              [[ -f "$dir/package.json" ]] || continue
+              node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); process.exit(p.name?.startsWith("@weshipwork/") && !p.private ? 0 : 1)' "$dir/package.json" || continue
+              publish_one "$dir"
+            done
+          else
+            case "$PACKAGE" in
+              *[!A-Za-z0-9_-]*|.*) echo "Package input must be a simple directory name under packages/ (alphanumeric, hyphens, underscores)" >&2; exit 1 ;;
+            esac
+            publish_one "packages/$PACKAGE"
+          fi

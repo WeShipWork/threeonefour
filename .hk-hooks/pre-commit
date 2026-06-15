@@ -1,0 +1,14 @@
+#!/bin/sh
+# hk pre-commit hook — silent on success, minimal on failure.
+if [ -n "$CI" ]; then
+  exit 0
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  output=$(mise exec -- hk run pre-commit "$@" 2>&1)
+else
+  output=$(hk run pre-commit "$@" 2>&1)
+fi
+code=$?
+[ $code -ne 0 ] && printf '%s\n' "$output"
+exit $code

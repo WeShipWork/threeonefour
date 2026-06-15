@@ -1,0 +1,11 @@
+#!/bin/sh
+# hk pre-push hook — run the full workspace check before pushing.
+if [ -n "$CI" ]; then
+  exit 0
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  exec mise exec -- hk run pre-push "$@"
+fi
+
+exec hk run pre-push "$@"

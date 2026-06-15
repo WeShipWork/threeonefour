@@ -1,0 +1,22 @@
+{
+    "name": "threeonefour",
+    "private": true,
+    "description": "Public Pi extensions from WeShip.work.",
+    "license": "MIT",
+    "packageManager": "pnpm@11.6.0",
+    "scripts": {
+        "check": "pnpm -r --if-present check",
+        "typecheck": "pnpm -r --if-present typecheck",
+        "test": "pnpm -r --if-present test",
+        "prepare": "[ -n \"$CI\" ] && exit 0 || command -v hk >/dev/null && git config --local core.hooksPath .hk-hooks || echo \"Note: hk not found; run mise install to enable git hooks.\""
+    },
+    "devDependencies": {
+        "@earendil-works/pi-ai": "^0.79.3",
+        "@earendil-works/pi-coding-agent": "^0.79.3",
+        "@earendil-works/pi-tui": "^0.79.3",
+        "@types/node": "^24.10.1",
+        "tsx": "^4.20.6",
+        "typebox": "^1.1.24",
+        "typescript": "^5.9.3"
+    }
+}

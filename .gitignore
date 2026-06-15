@@ -1,0 +1,17 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+.pi/
+!packages/pi-subagents/test/fixtures/.pi/
+!packages/pi-subagents/test/fixtures/.pi/**
+.agents/
+CONTEXT.md
+docs/
+skills-lock.json
+
+hk.local.pkl

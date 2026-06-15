@@ -1,0 +1,72 @@
+{
+    "name": "@weshipwork/pi-herd",
+    "version": "0.1.0",
+    "description": "Read-only Herdr transcript mirrors for Pi Subagents.",
+    "license": "MIT",
+    "type": "module",
+    "keywords": [
+        "pi-package",
+        "pi",
+        "pi-coding-agent",
+        "herdr",
+        "subagents",
+        "mirror"
+    ],
+    "pi": {
+        "extensions": [
+            "./extensions/herd.ts"
+        ]
+    },
+    "bin": {
+        "pi-herd-viewer": "bin/pi-herd-viewer.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+        "check": "pnpm run typecheck && pnpm test"
+    },
+    "peerDependencies": {
+        "@earendil-works/pi-coding-agent": "*",
+        "@weshipwork/pi-subagents": "*"
+    },
+    "peerDependenciesMeta": {
+        "@earendil-works/pi-coding-agent": {
+            "optional": true
+        },
+        "@weshipwork/pi-subagents": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@earendil-works/pi-coding-agent": "^0.79.3",
+        "@weshipwork/pi-subagents": "workspace:*",
+        "@types/node": "^24.10.1",
+        "tsx": "^4.20.6",
+        "typescript": "^5.9.3"
+    },
+    "files": [
+        "src/",
+        "bin/",
+        "extensions/",
+        "README.md",
+        "package.json",
+        "tsconfig.json"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/WeShipWork/threeonefour.git",
+        "directory": "packages/pi-herd"
+    },
+    "homepage": "https://github.com/WeShipWork/threeonefour/tree/main/packages/pi-herd",
+    "bugs": {
+        "url": "https://github.com/WeShipWork/threeonefour/issues"
+    },
+    "author": "brandon@weship.work",
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=22.19.0"
+    },
+    "packageManager": "pnpm@11.6.0"
+}

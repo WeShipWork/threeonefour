@@ -1,0 +1,69 @@
+amends "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.48.0/hk@1.48.0#/Builtins.pkl"
+
+exclude = List("node_modules", "dist", "coverage", ".git", ".pi", ".agents")
+display_skip_reasons = List()
+terminal_progress = false
+
+local binary_excludes = List(
+    "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp", "*.ico",
+    "*.woff", "*.woff2", "*.ttf", "*.eot", "*.pdf", "*.zip",
+    "*.tgz", "*.gz", "*.mp4"
+)
+
+local hygiene_steps = new Mapping<String, Step> {
+    ["trailing-whitespace"] = (Builtins.trailing_whitespace) {
+        exclude = binary_excludes
+    }
+    ["newlines"] = (Builtins.newlines) {
+        exclude = binary_excludes
+    }
+    ["check-merge-conflict"] = Builtins.check_merge_conflict
+    ["typos"] = (Builtins.typos) {
+        exclude = binary_excludes
+    }
+    ["gitleaks"] = Builtins.gitleaks
+}
+
+local package_steps = new Mapping<String, Step> {
+    ["pi-subagents-lint"] {
+        glob = List("packages/pi-subagents/src/**/*.ts", "packages/pi-subagents/test/**/*.ts", "packages/pi-subagents/biome.json")
+        check = "scripts/quiet-on-success.sh pnpm --filter @weshipwork/pi-subagents lint"
+        fix = "scripts/quiet-on-success.sh pnpm --filter @weshipwork/pi-subagents lint:fix"
+    }
+}
+
+local all_steps = new Mapping<String, Step> {
+    ["workspace-check"] {
+        check = "scripts/quiet-on-success.sh pnpm check"
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = new Mapping<String, Step> {
+            ...hygiene_steps
+            ...package_steps
+        }
+    }
+    ["pre-push"] {
+        steps = all_steps
+    }
+    ["fix"] {
+        fix = true
+        stash = "git"
+        steps = new Mapping<String, Step> {
+            ...hygiene_steps
+            ...package_steps
+        }
+    }
+    ["check"] {
+        steps = new Mapping<String, Step> {
+            ...hygiene_steps
+            ...package_steps
+            ...all_steps
+        }
+    }
+}
