@@ -266,6 +266,15 @@ export default function (pi: ExtensionAPI) {
   const pendingNudges = new Map<string, ReturnType<typeof setTimeout>>();
   const NUDGE_HOLD_MS = 200;
 
+  // ---- Batch tracking for smart join mode ----
+  // Collects background agent IDs spawned in the current turn for smart grouping.
+  // Uses a debounced timer: each new agent resets the 100ms window so that all
+  // parallel tool calls (which may be dispatched across multiple microtasks by the
+  // framework) are captured in the same batch.
+  let currentBatchAgents: { id: string; joinMode: JoinMode }[] = [];
+  let batchFinalizeTimer: ReturnType<typeof setTimeout> | undefined;
+  let batchCounter = 0;
+
   function scheduleNudge(key: string, send: () => void, delay = NUDGE_HOLD_MS) {
     cancelNudge(key);
     pendingNudges.set(key, setTimeout(() => {
@@ -285,6 +294,12 @@ export default function (pi: ExtensionAPI) {
   function cancelPendingNudges() {
     for (const timer of pendingNudges.values()) clearTimeout(timer);
     pendingNudges.clear();
+  }
+
+  function cancelBatchFinalize() {
+    if (batchFinalizeTimer) clearTimeout(batchFinalizeTimer);
+    batchFinalizeTimer = undefined;
+    currentBatchAgents = [];
   }
 
   // ---- Individual nudge helper (async join mode) ----
@@ -343,6 +358,12 @@ export default function (pi: ExtensionAPI) {
     },
     30_000,
   );
+
+  function cancelSessionNotifications() {
+    cancelPendingNudges();
+    cancelBatchFinalize();
+    groupJoin.dispose();
+  }
 
   /** Helper: build event data for lifecycle events from an AgentRecord. */
   function buildEventData(record: AgentRecord) {
@@ -479,13 +500,13 @@ export default function (pi: ExtensionAPI) {
   // Capture ctx from session_start for RPC spawn handler + start the scheduler.
   pi.on("session_start", async (_event, ctx) => {
     currentCtx = ctx;
-    cancelPendingNudges();
+    cancelSessionNotifications();
     manager.clearCompleted(true);
     if (isSchedulingEnabled() && !scheduler.isActive()) startScheduler(ctx);
   });
 
   pi.on("session_before_switch", () => {
-    cancelPendingNudges();
+    cancelSessionNotifications();
     manager.clearCompleted(true);
     scheduler.stop();
   });
@@ -511,8 +532,7 @@ export default function (pi: ExtensionAPI) {
     delete (globalThis as any)[MIRROR_SERVICE_KEY];
     scheduler.stop();
     manager.abortAll();
-    for (const timer of pendingNudges.values()) clearTimeout(timer);
-    pendingNudges.clear();
+    cancelSessionNotifications();
     fleet.dispose();
     manager.dispose();
   });
@@ -571,15 +591,6 @@ export default function (pi: ExtensionAPI) {
   let toolDescriptionMode: ToolDescriptionMode = "full";
   function getToolDescriptionMode(): ToolDescriptionMode { return toolDescriptionMode; }
   function setToolDescriptionMode(mode: ToolDescriptionMode): void { toolDescriptionMode = mode; }
-
-  // ---- Batch tracking for smart join mode ----
-  // Collects background agent IDs spawned in the current turn for smart grouping.
-  // Uses a debounced timer: each new agent resets the 100ms window so that all
-  // parallel tool calls (which may be dispatched across multiple microtasks by the
-  // framework) are captured in the same batch.
-  let currentBatchAgents: { id: string; joinMode: JoinMode }[] = [];
-  let batchFinalizeTimer: ReturnType<typeof setTimeout> | undefined;
-  let batchCounter = 0;
 
   /** Finalize the current batch: if 2+ smart-mode agents, register as a group. */
   function finalizeBatch() {
