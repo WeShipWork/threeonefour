@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0-mirror.0] - 2026-06-26
+
+### Changed
+- Updated the WeShip.work fork from upstream `@tintinweb/pi-subagents` `v0.10.3` to `v0.12.0`, including upstream `v0.10.4`, `v0.11.0`, and `v0.12.0` changes.
+- Preserved the read-only Mirror mode observation seam for `@weshipwork/pi-herd`.
+
+## [0.12.0] - 2026-06-24
+
+### Added
+- **FleetView — a Claude Code-style subagent navigator below the editor.** A persistent, navigable list of `main` + every active subagent renders beneath the editor whenever agents are running — **auto-shown, no keypress needed** — mirroring Claude Code's bottom fleet bar: `⏺`/`◯` selection markers, agent type + description, right-aligned `elapsed · ↓ tokens`, and a `↓ N more` overflow once past five rows. Press `↓` (or `←`) at an **empty prompt** to move focus into the list, `↑`/`↓` to select, `Enter` to open the selected agent's live, auto-updating conversation overlay, and `Esc` (or `↑` above `main`) to return to the prompt. Implemented as a `belowEditor` widget with all key handling routed through `onTerminalInput` (which fires before the editor); it only captures arrow keys at an empty prompt — and acts on key-**press** only (kitty-protocol release events are ignored, otherwise each tap moved twice) — so typing, history, and cursor movement are untouched. Rows are ordered **earliest-launched first**; only openable agents (those with a session) are shown, so pending/queued agents appear once they start and `Enter` never dead-ends; **finished agents linger ~4s** before dropping out (their elapsed freezes at completion); and a viewer **stays open through its agent's completion** so the final output remains readable. Selection follows the viewed agent by id, so closing a viewer returns you to the same agent even if the list reordered while it was open. Every rendered line is width-clamped — the narrow-terminal crash/flicker class previously fixed in v0.2.7 and [#7](https://github.com/tintinweb/pi-subagents/issues/7). Toggle via `/agents → Settings → Fleet view` (default on; pure-UI, so no LLM-context cost).
+
+## [0.11.0] - 2026-06-23
+
+### Added
+- **`persist_session` / `session_dir` agent frontmatter — persist a subagent as a real pi session** ([#111](https://github.com/tintinweb/pi-subagents/pull/111) — thanks [@codesoda](https://github.com/codesoda)). `persist_session: true` runs the subagent through `SessionManager.create(...)` instead of `SessionManager.inMemory(...)`, so its full transcript is written to pi's normal session location (`~/.pi/agent/sessions`) — inspectable and resumable after the fact, like a top-level session — rather than living in memory only. Useful for long-running, multi-round orchestrations (plan → review → implement → verify) where each subagent's conversation is worth keeping. `session_dir` optionally overrides where the persisted session is written (absolute, `~`, or agent-cwd-relative path); omitted, persistence follows pi's own precedence — `PI_CODING_AGENT_SESSION_DIR`, then the settings manager's `getSessionDir()`, then pi's default location. Both default off/unset, so existing agents are unchanged: the in-memory path is byte-identical to before, and the sidechain `.output` transcript is still written either way.
+
+## [0.10.4] - 2026-06-23
+
+### Fixed
+- **Background agent records lost before result is read** ([#108](https://github.com/tintinweb/pi-subagents/issues/108) — thanks [@philipmw](https://github.com/philipmw)). On session switch or `/new`/`/resume`, `clearCompleted()` removed completed agent records regardless of whether the LLM had retrieved the result, causing `get_subagent_result` to return "Agent not found" for agents that had finished but hadn't been checked yet. `clearCompleted()` now accepts a `skipUnconsumed` flag; session event handlers pass `true`, so records with `resultConsumed=false` are preserved across session transitions. The 10-minute cleanup timer handles eventual eviction. Note: a full session shutdown (`session_shutdown`) calls `dispose()` which clears all records unconditionally — that path is not affected by this fix.
+
+### Added
+- **Foreground agent lifecycle completion and conversation logging** ([#105](https://github.com/tintinweb/pi-subagents/pull/105) — thanks [@benrhodeland](https://github.com/benrhodeland)). Two gaps closed: (1) **`onComplete` now fires for foreground agents**, emitting `subagents:completed` / `subagents:failed` lifecycle events and writing a `subagents:record` entry to the parent JSONL — previously only background agents emitted these, leaving cross-extension observers with an orphaned `subagents:started` event and no matching completion. `resultConsumed` is pre-set so the callback skips notifications (the result is returned inline); no change to the tool's return value. (2) **Foreground agent conversations are now streamed to `.output` files** (same `.pi/output/agent-<id>.jsonl` path as background agents) — inline subagent transcripts were previously permanently lost after `spawnAndWait` returned.
+
 ## [0.10.3] - 2026-06-12
 
 ### Added

@@ -2,6 +2,8 @@
 
 This package is a minimal fork of `@tintinweb/pi-subagents` for `@weshipwork/pi-herd` Mirror mode.
 
+Current fork release: `0.12.0-mirror.0`, tracking upstream `@tintinweb/pi-subagents` tag `v0.12.0`.
+
 The fork adds a read-only observation seam at `src/mirror.ts` and installs `globalThis.__piSubagentsMirrorService` so `pi-herd` can mirror Subagent snapshots and live updates without hosting or steering Subagents.
 
 ## Install for Mirror mode
