@@ -282,6 +282,11 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
+  function cancelPendingNudges() {
+    for (const timer of pendingNudges.values()) clearTimeout(timer);
+    pendingNudges.clear();
+  }
+
   // ---- Individual nudge helper (async join mode) ----
   function emitIndividualNudge(record: AgentRecord) {
     if (record.resultConsumed) return;  // re-check at send time
@@ -474,11 +479,13 @@ export default function (pi: ExtensionAPI) {
   // Capture ctx from session_start for RPC spawn handler + start the scheduler.
   pi.on("session_start", async (_event, ctx) => {
     currentCtx = ctx;
+    cancelPendingNudges();
     manager.clearCompleted(true);
     if (isSchedulingEnabled() && !scheduler.isActive()) startScheduler(ctx);
   });
 
   pi.on("session_before_switch", () => {
+    cancelPendingNudges();
     manager.clearCompleted(true);
     scheduler.stop();
   });

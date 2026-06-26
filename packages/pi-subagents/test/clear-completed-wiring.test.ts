@@ -152,6 +152,22 @@ describe("issue #108: unread completed background agents survive session events"
     await lifecycle.get("session_shutdown")?.({}, ctx());
   });
 
+  it.each([
+    ["session_before_switch", async (lifecycle: Map<string, any>) => lifecycle.get("session_before_switch")?.()],
+    ["session_start", async (lifecycle: Map<string, any>) => lifecycle.get("session_start")?.({}, ctx())],
+  ])("%s cancels pending completion nudges for preserved unread results", async (_eventName, fireEvent) => {
+    const { pi, tools, lifecycle } = makePi();
+    subagentsExtension(pi);
+    await spawnCompletedBackgroundAgent(tools);
+
+    await fireEvent(lifecycle);
+    await new Promise((r) => setTimeout(r, 250));
+
+    expect(pi.sendMessage).not.toHaveBeenCalled();
+
+    await lifecycle.get("session_shutdown")?.({}, ctx());
+  });
+
   it("once read, a session switch DOES evict it — the fix stays surgical, no leak", async () => {
     const { pi, tools, lifecycle } = makePi();
     subagentsExtension(pi);
