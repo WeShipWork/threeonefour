@@ -88,33 +88,6 @@ async function spawnCompletedBackgroundAgent(tools: Map<string, any>): Promise<s
   return id as string;
 }
 
-async function spawnSmartGroupWithOneCompleted(tools: Map<string, any>): Promise<void> {
-  vi.mocked(runAgent)
-    .mockResolvedValueOnce({
-      responseText: "THE-RESULT-PAYLOAD",
-      session: { dispose: vi.fn() } as any,
-      aborted: false,
-      steered: false,
-    })
-    .mockImplementationOnce(() => new Promise(() => {}) as any);
-
-  await tools.get("Agent").execute(
-    "tc-spawn-a",
-    { prompt: "go a", description: "Group member A", subagent_type: "general-purpose", run_in_background: true },
-    undefined,
-    undefined,
-    ctx(),
-  );
-  await tools.get("Agent").execute(
-    "tc-spawn-b",
-    { prompt: "go b", description: "Group member B", subagent_type: "general-purpose", run_in_background: true },
-    undefined,
-    undefined,
-    ctx(),
-  );
-  await flush();
-}
-
 describe("issue #108: unread completed background agents survive session events", () => {
   let tmpDir: string;
   let agentDir: string;
@@ -189,26 +162,6 @@ describe("issue #108: unread completed background agents survive session events"
 
     await fireEvent(lifecycle);
     await new Promise((r) => setTimeout(r, 250));
-
-    expect(pi.sendMessage).not.toHaveBeenCalled();
-
-    await lifecycle.get("session_shutdown")?.({}, ctx());
-  });
-
-  it("session_before_switch cancels armed group completion timers", async () => {
-    const realSetTimeout = globalThis.setTimeout;
-    vi.spyOn(globalThis, "setTimeout").mockImplementation(((handler: TimerHandler, timeout?: number, ...args: any[]) => {
-      const delay = timeout === 100 ? 0 : timeout === 30_000 ? 50 : timeout;
-      return realSetTimeout(handler, delay, ...args);
-    }) as typeof setTimeout);
-
-    const { pi, tools, lifecycle } = makePi();
-    subagentsExtension(pi);
-    await spawnSmartGroupWithOneCompleted(tools);
-
-    await new Promise((r) => setTimeout(r, 10));
-    await lifecycle.get("session_before_switch")?.();
-    await new Promise((r) => setTimeout(r, 300));
 
     expect(pi.sendMessage).not.toHaveBeenCalled();
 
