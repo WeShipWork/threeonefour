@@ -1,6 +1,6 @@
 {
   "name": "@weshipwork/pi-subagents",
-  "version": "0.10.3-mirror.0",
+  "version": "0.12.0-mirror.0",
   "description": "Fork of tintinweb pi-subagents with read-only mirror observation support for pi-herd.",
   "author": "Three One Four / tintinweb",
   "license": "MIT",
